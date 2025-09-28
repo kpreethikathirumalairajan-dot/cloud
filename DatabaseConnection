@@ -1,0 +1,137 @@
+import java.util.ArrayList;
+import java.util.List;
+
+// ================= Behavioural Patterns =================
+
+// Observer Pattern
+interface Subscriber {
+    void update(String news);
+}
+
+class NewsSubscriber implements Subscriber {
+    private String name;
+    public NewsSubscriber(String name) { this.name = name; }
+    public void update(String news) { System.out.println(name + " received news: " + news); }
+}
+
+class NewsAgency {
+    private List<Subscriber> subscribers = new ArrayList<>();
+    public void addSubscriber(Subscriber sub) { subscribers.add(sub); }
+    public void removeSubscriber(Subscriber sub) { subscribers.remove(sub); }
+    public void notifySubscribers(String news) {
+        for (Subscriber sub : subscribers) sub.update(news);
+    }
+}
+
+// Strategy Pattern
+interface PaymentStrategy { void pay(double amount); }
+class CreditCardPayment implements PaymentStrategy { public void pay(double amount) { System.out.println("Paid " + amount + " using Credit Card."); } }
+class PayPalPayment implements PaymentStrategy { public void pay(double amount) { System.out.println("Paid " + amount + " using PayPal."); } }
+class ShoppingCart {
+    private PaymentStrategy paymentStrategy;
+    public void setPaymentStrategy(PaymentStrategy strategy) { this.paymentStrategy = strategy; }
+    public void checkout(double amount) { paymentStrategy.pay(amount); }
+}
+
+// ================= Creational Patterns =================
+
+// Singleton Pattern
+class DatabaseConnection {
+    private static DatabaseConnection instance;
+    private DatabaseConnection() { System.out.println("Database connected!"); }
+    public static DatabaseConnection getInstance() {
+        if (instance == null) instance = new DatabaseConnection();
+        return instance;
+    }
+    public void query(String sql) { System.out.println("Executing query: " + sql); }
+}
+
+// Factory Pattern
+interface Shape { void draw(); }
+class Circle implements Shape { public void draw() { System.out.println("Drawing Circle"); } }
+class Rectangle implements Shape { public void draw() { System.out.println("Drawing Rectangle"); } }
+class ShapeFactory {
+    public Shape getShape(String shapeType) {
+        if (shapeType == null) return null;
+        if (shapeType.equalsIgnoreCase("CIRCLE")) return new Circle();
+        if (shapeType.equalsIgnoreCase("RECTANGLE")) return new Rectangle();
+        return null;
+    }
+}
+
+// ================= Structural Patterns =================
+
+// Adapter Pattern
+interface Socket110V { void supply110V(); }
+class Device220V { void supply220V() { System.out.println("Device running on 220V"); } }
+class VoltageAdapter implements Socket110V {
+    private Device220V device;
+    public VoltageAdapter(Device220V device) { this.device = device; }
+    public void supply110V() {
+        System.out.println("Converting 110V to 220V...");
+        device.supply220V();
+    }
+}
+
+// Decorator Pattern
+interface Coffee { String getDescription(); double cost(); }
+class SimpleCoffee implements Coffee { public String getDescription() { return "Simple Coffee"; } public double cost() { return 5.0; } }
+abstract class CoffeeDecorator implements Coffee {
+    protected Coffee coffee;
+    public CoffeeDecorator(Coffee coffee) { this.coffee = coffee; }
+}
+class MilkDecorator extends CoffeeDecorator {
+    public MilkDecorator(Coffee coffee) { super(coffee); }
+    public String getDescription() { return coffee.getDescription() + ", Milk"; }
+    public double cost() { return coffee.cost() + 2.0; }
+}
+class SugarDecorator extends CoffeeDecorator {
+    public SugarDecorator(Coffee coffee) { super(coffee); }
+    public String getDescription() { return coffee.getDescription() + ", Sugar"; }
+    public double cost() { return coffee.cost() + 1.0; }
+}
+
+// ================= Main Class =================
+public class DesignPatternsDemo {
+    public static void main(String[] args) {
+        System.out.println("=== Behavioural Patterns ===");
+        // Observer
+        NewsAgency agency = new NewsAgency();
+        agency.addSubscriber(new NewsSubscriber("Alice"));
+        agency.addSubscriber(new NewsSubscriber("Bob"));
+        agency.notifySubscribers("Breaking News: Java 21 released!");
+
+        // Strategy
+        ShoppingCart cart = new ShoppingCart();
+        cart.setPaymentStrategy(new CreditCardPayment());
+        cart.checkout(500);
+        cart.setPaymentStrategy(new PayPalPayment());
+        cart.checkout(300);
+
+        System.out.println("\n=== Creational Patterns ===");
+        // Singleton
+        DatabaseConnection db1 = DatabaseConnection.getInstance();
+        DatabaseConnection db2 = DatabaseConnection.getInstance();
+        db1.query("SELECT * FROM users");
+        System.out.println("db1 == db2: " + (db1 == db2));
+
+        // Factory
+        ShapeFactory factory = new ShapeFactory();
+        Shape shape1 = factory.getShape("CIRCLE");
+        shape1.draw();
+        Shape shape2 = factory.getShape("RECTANGLE");
+        shape2.draw();
+
+        System.out.println("\n=== Structural Patterns ===");
+        // Adapter
+        Device220V device = new Device220V();
+        Socket110V adapter = new VoltageAdapter(device);
+        adapter.supply110V();
+
+        // Decorator
+        Coffee coffee = new SimpleCoffee();
+        coffee = new MilkDecorator(coffee);
+        coffee = new SugarDecorator(coffee);
+        System.out.println(coffee.getDescription() + " costs " + coffee.cost());
+    }
+}
