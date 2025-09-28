@@ -1,0 +1,203 @@
+import java.util.*;
+
+// Task class
+class Task {
+    private String description;
+    private String startTime;
+    private String endTime;
+    private String priority;
+    private boolean completed;
+
+    public Task(String description, String startTime, String endTime, String priority) {
+        this.description = description;
+        this.startTime = startTime;
+        this.endTime = endTime;
+        this.priority = priority;
+        this.completed = false;
+    }
+
+    // Getters
+    public String getDescription() { return description; }
+    public String getStartTime() { return startTime; }
+    public String getEndTime() { return endTime; }
+    public String getPriority() { return priority; }
+    public boolean isCompleted() { return completed; }
+
+    // Mark task as completed
+    public void markCompleted() { this.completed = true; }
+
+    @Override
+    public String toString() {
+        return startTime + " - " + endTime + ": " + description + " [" + priority + "]" 
+               + (completed ? " (Completed)" : "");
+    }
+}
+
+// Factory Pattern for creating Task objects
+class TaskFactory {
+    public static Task createTask(String description, String startTime, String endTime, String priority) {
+        return new Task(description, startTime, endTime, priority);
+    }
+}
+
+// Observer interface
+interface TaskObserver {
+    void update(String message);
+}
+
+// Concrete Observer
+class TaskConflictNotifier implements TaskObserver {
+    public void update(String message) {
+        System.out.println("Notification: " + message);
+    }
+}
+
+// Singleton ScheduleManager class
+class ScheduleManager {
+    private static ScheduleManager instance;
+    private List<Task> tasks;
+    private List<TaskObserver> observers;
+
+    private ScheduleManager() {
+        tasks = new ArrayList<>();
+        observers = new ArrayList<>();
+    }
+
+    // Singleton getInstance
+    public static ScheduleManager getInstance() {
+        if (instance == null) {
+            instance = new ScheduleManager();
+        }
+        return instance;
+    }
+
+    // Add observer
+    public void addObserver(TaskObserver observer) {
+        observers.add(observer);
+    }
+
+    // Notify observers
+    private void notifyObservers(String message) {
+        for (TaskObserver observer : observers) {
+            observer.update(message);
+        }
+    }
+
+    // Add a task
+    public void addTask(Task task) {
+        // Validate time format
+        if (!isValidTime(task.getStartTime()) || !isValidTime(task.getEndTime())) {
+            System.out.println("Error: Invalid time format.");
+            return;
+        }
+
+        // Check for conflicts
+        for (Task t : tasks) {
+            if (isOverlap(task.getStartTime(), task.getEndTime(), t.getStartTime(), t.getEndTime())) {
+                String conflictMsg = "Error: Task conflicts with existing task \"" + t.getDescription() + "\".";
+                notifyObservers(conflictMsg);
+                System.out.println(conflictMsg);
+                return;
+            }
+        }
+
+        tasks.add(task);
+        tasks.sort(Comparator.comparing(Task::getStartTime));
+        System.out.println("Task added successfully. No conflicts.");
+    }
+
+    // Remove a task
+    public void removeTask(String description) {
+        Task toRemove = null;
+        for (Task t : tasks) {
+            if (t.getDescription().equalsIgnoreCase(description)) {
+                toRemove = t;
+                break;
+            }
+        }
+        if (toRemove != null) {
+            tasks.remove(toRemove);
+            System.out.println("Task removed successfully.");
+        } else {
+            System.out.println("Error: Task not found.");
+        }
+    }
+
+    // View all tasks
+    public void viewTasks() {
+        if (tasks.isEmpty()) {
+            System.out.println("No tasks scheduled for the day.");
+            return;
+        }
+        for (Task t : tasks) {
+            System.out.println(t);
+        }
+    }
+
+    // Helper: Validate time format HH:mm
+    private boolean isValidTime(String time) {
+        try {
+            String[] parts = time.split(":");
+            int hour = Integer.parseInt(parts[0]);
+            int min = Integer.parseInt(parts[1]);
+            return hour >= 0 && hour < 24 && min >= 0 && min < 60;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    // Helper: Check overlapping times
+    private boolean isOverlap(String start1, String end1, String start2, String end2) {
+        return !(end1.compareTo(start2) <= 0 || start1.compareTo(end2) >= 0);
+    }
+}
+
+// Main application
+public class AstronautScheduler {
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        ScheduleManager manager = ScheduleManager.getInstance();
+        TaskConflictNotifier notifier = new TaskConflictNotifier();
+        manager.addObserver(notifier);
+
+        while (true) {
+            System.out.println("\n1. Add Task\n2. Remove Task\n3. View Tasks\n4. Exit");
+            System.out.print("Enter choice: ");
+            int choice = sc.nextInt();
+            sc.nextLine(); // consume newline
+
+            switch (choice) {
+                case 1:
+                    System.out.print("Enter description: ");
+                    String desc = sc.nextLine();
+                    System.out.print("Enter start time (HH:mm): ");
+                    String start = sc.nextLine();
+                    System.out.print("Enter end time (HH:mm): ");
+                    String end = sc.nextLine();
+                    System.out.print("Enter priority (High/Medium/Low): ");
+                    String priority = sc.nextLine();
+                    Task task = TaskFactory.createTask(desc, start, end, priority);
+                    manager.addTask(task);
+                    break;
+
+                case 2:
+                    System.out.print("Enter task description to remove: ");
+                    String removeDesc = sc.nextLine();
+                    manager.removeTask(removeDesc);
+                    break;
+
+                case 3:
+                    manager.viewTasks();
+                    break;
+
+                case 4:
+                    System.out.println("Exiting application.");
+                    System.exit(0);
+                    break;
+
+                default:
+                    System.out.println("Invalid choice. Try again.");
+            }
+        }
+    }
+}
